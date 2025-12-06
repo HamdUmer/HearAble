@@ -1,7 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:speech_to_text/speech_to_text.dart' as stt;
 
-class SpeechToTextScreen extends StatelessWidget {
+class SpeechToTextScreen extends StatefulWidget {
   const SpeechToTextScreen({super.key});
+
+  @override
+  Speechtextstate createState() => Speechtextstate();
+}
+
+class Speechtextstate extends State<SpeechToTextScreen> {
+  bool islistening = false;
+  late stt.SpeechToText _speechToText;
+  String text = "Press the button and start speaking";
+  double confidence = 1.0;
+
+  @override
+  void initState() {
+    _speechToText = stt.SpeechToText();
+    super.initState();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -18,10 +35,10 @@ class SpeechToTextScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 border: Border.all(color: Colors.grey.shade300),
               ),
-              child: const SingleChildScrollView(
+              child: SingleChildScrollView(
                 child: Text(
-                  'Tap the microphone button to start listening...',
-                  style: TextStyle(fontSize: 20, color: Colors.grey),
+                  text,
+                  style: const TextStyle(fontSize: 20, color: Colors.grey),
                 ),
               ),
             ),
@@ -48,9 +65,12 @@ class SpeechToTextScreen extends StatelessWidget {
                   color: Colors.grey,
                 ),
                 FloatingActionButton.large(
-                  onPressed: () {},
+                  onPressed: capturevoice,
                   backgroundColor: Colors.blue,
-                  child: const Icon(Icons.mic, size: 40),
+                  child: Icon(
+                    islistening ? Icons.mic : Icons.mic_none,
+                    size: 40,
+                  ),
                 ),
                 IconButton(
                   onPressed: () {},
@@ -63,5 +83,25 @@ class SpeechToTextScreen extends StatelessWidget {
         ],
       ),
     );
+  }
+
+  void capturevoice() async {
+    if (!islistening) {
+      bool available = await _speechToText.initialize();
+      if (available) {
+        setState(() => islistening = true);
+        _speechToText.listen(
+          onResult: (result) => setState(() {
+            text = result.recognizedWords;
+            if (result.hasConfidenceRating && result.confidence > 0) {
+              confidence = result.confidence;
+            }
+          }),
+        );
+      }
+    } else {
+      setState(() => islistening = false);
+      _speechToText.stop();
+    }
   }
 }
